@@ -183,3 +183,5 @@ int main(int argc, char *argv[]){
 	close(p2[0]); // father close reading p2 at the 
 	return 0;
 }
+
+// Aggiunta riga 1
