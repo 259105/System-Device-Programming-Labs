@@ -8,7 +8,6 @@
 #include <string.h>
 
 #define BLOCKSIZE 4096
-#define MAXCHAR 1024 // incluse /0
 
 int copyFile(char *,char *);
 int wrapCopyFile(void *);

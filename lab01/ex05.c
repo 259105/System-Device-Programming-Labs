@@ -40,7 +40,7 @@ void binary(int *vet, int n){
 			vet[i] = 1;
 		}
 	}
-
+	// stampa
 	char *vetS = (char *) malloc((n+1)*sizeof(char));
 	int i;
 	for(i=0;i<n;i++){
@@ -48,7 +48,7 @@ void binary(int *vet, int n){
 	}
 	sprintf(&vetS[i],"\0");
 	fprintf(stdout,"%s\n", vetS);
-
+	// waiting childs
 	for(i=0; i<nChild; i++){
 		wait(NULL);
 	}

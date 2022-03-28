@@ -27,7 +27,7 @@ int main(int argc, char *argv[]){
     for(int i=0;i<argc-1;i++){
         parThreads[i] = (ParThread *) malloc(sizeof(ParThread));
         parThreads[i]->directory = argv[i+1];
-        if(pthread_create(&(parThreads[i]->tid),NULL,threadFunct,parThreads[i])){
+        if(pthread_create(&(parThreads[i]->tid),NULL,threadFunct,(void *)parThreads[i])){
             fprintf(stderr,"Error creating thread: %d\n",i);
             exit(1);
         }
