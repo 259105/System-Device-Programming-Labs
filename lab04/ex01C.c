@@ -3,44 +3,19 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <sys/wait.h>
-#include <fcntl.h>
+#include <sys/select.h>
 
 #define WAIT_TIME_1 1
 #define WAIT_TIME_2 3
 #define STR_SIZE 5
 #define STR_NUM 3
 
-void set_fcntl(int, int);
-void clr_fcntl(int, int);
-
-void set_fcntl(int fd, int flag){
-	int val;
-	if((val=fcntl(fd, F_GETFL, 0))==-1){
-		fprintf(stderr,"Error getting flags of file descriptor %d",fd);
-		return;
-	}
-	
-	val |= flag;
-	
-	if(fcntl(fd, F_SETFL, val)){
-		fprintf(stderr,"Error setting flags of file descriptor %d",fd);
-		return;
-	}
-}
-
-void clr_fcntl(int fd, int flag){
-	int val;
-	if((val=fcntl(fd, F_GETFL, 0))==-1){
-		fprintf(stderr,"Error getting flags of file descriptor %d",fd);
-		return;
-	}
-	
-	val &= ~flag;
-	
-	if(fcntl(fd, F_SETFL, val)){
-		fprintf(stderr,"Error setting flags of file descriptor %d",fd);
-		return;
-	}
+int MCD(int n1, int n2){
+	while(n1!=n2){
+        if(n1 > n2) n1 -= n2;
+        else n2 -= n1;
+    }
+	return n1;
 }
 
 int main(int argc, char *argv[]){
@@ -136,18 +111,38 @@ int main(int argc, char *argv[]){
 	}
 	close(p2[1]); // father close writing p2
 	
-	set_fcntl(p1[0],O_NONBLOCK);
-	set_fcntl(p2[0],O_NONBLOCK);
-	
 	int strSize;
-	int k=0;
-	int n=0,m=0;
-	char *str;
+	int k=0,n=0,m=0;
+	char *str ;
+	fd_set rdSet;
 	while(k<STR_NUM*2){
-	
-		if(read(p1[0],&strSize,sizeof(int)) == sizeof(int)){
+		// Reset the set of reading
+		FD_ZERO(&rdSet);
+		if(n<STR_NUM){
+			FD_SET(p1[0],&rdSet);
+		}	
+		if(m<STR_NUM){
+			FD_SET(p2[0],&rdSet);
+		}
+		// set the time 
+		struct timeval tv;
+		tv.tv_sec=MCD(WAIT_TIME_1,WAIT_TIME_2);
+		tv.tv_usec=0;
+
+		int sel;
+		if ((sel=select((p1[0]>p2[0]?p1[0]:p2[0])+1,&rdSet,NULL,NULL,&tv)) == -1){
+			fprintf(stderr,"Error select\n");
+		}else if(sel==0){
+			fprintf(stdout,"No file descriptor ready\n");
+			continue;
+		}
+		fprintf(stdout,"Ready %d file descriptor(s)\n",sel);
+
+		if(FD_ISSET(p1[0],&rdSet)){
+			if(read(p1[0],&strSize,sizeof(int)) != sizeof(int)){
+				fprintf(stderr,"Error reading string size %i, on pipe1\n",n);
+			}
 			str = (char *) malloc((strSize+1)*sizeof(char));
-			sleep(WAIT_TIME_1);
 			if(read(p1[0],str,(strSize+1)*sizeof(char))!=(strSize+1)*sizeof(char)){
 				fprintf(stderr,"Error reading string %i, on pipe1\n",n);
 			}
@@ -156,13 +151,14 @@ int main(int argc, char *argv[]){
 			}
 			fprintf(stdout,"Child 1:%d: %s\n",n,str);
 			free(str);
-			n++;
-			k++;
+			n++;k++;
 		}
 		
-		if(read(p2[0],&strSize,sizeof(int)) == sizeof(int)){
+		if(FD_ISSET(p2[0],&rdSet)){
+			if(read(p2[0],&strSize,sizeof(int)) != sizeof(int)){
+				fprintf(stderr,"Error reading string size %i, on pipe2\n",m);
+			}
 			str = (char *) malloc((strSize+1)*sizeof(char));
-			sleep(WAIT_TIME_2);
 			if(read(p2[0],str,(strSize+1)*sizeof(char))!=(strSize+1)*sizeof(char)){
 				fprintf(stderr,"Error reading string %i, on pipe2\n",m);
 			}
@@ -171,9 +167,9 @@ int main(int argc, char *argv[]){
 			}
 			fprintf(stdout,"Child 2:%d: %s\n",m,str);
 			free(str);
-			n++;
-			k++;
+			m++;k++;
 		}
+		
 	}
 	
 	wait(0);
