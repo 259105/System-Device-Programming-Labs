@@ -133,10 +133,10 @@ int main(int argc, char *argv[]){
 		if ((sel=select((p1[0]>p2[0]?p1[0]:p2[0])+1,&rdSet,NULL,NULL,&tv)) == -1){
 			fprintf(stderr,"Error select\n");
 		}else if(sel==0){
-			fprintf(stdout,"No file descriptor ready\n");
+			//fprintf(stdout,"No file descriptor ready\n");
 			continue;
 		}
-		fprintf(stdout,"Ready %d file descriptor(s)\n",sel);
+		//fprintf(stdout,"Ready %d file descriptor(s)\n",sel);
 
 		if(FD_ISSET(p1[0],&rdSet)){
 			if(read(p1[0],&strSize,sizeof(int)) != sizeof(int)){

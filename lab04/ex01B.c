@@ -147,10 +147,12 @@ int main(int argc, char *argv[]){
 	
 		if(read(p1[0],&strSize,sizeof(int)) == sizeof(int)){
 			str = (char *) malloc((strSize+1)*sizeof(char));
-			sleep(WAIT_TIME_1);
+			//sleep(WAIT_TIME_1);
+			clr_fcntl(p1[0],O_NONBLOCK);
 			if(read(p1[0],str,(strSize+1)*sizeof(char))!=(strSize+1)*sizeof(char)){
 				fprintf(stderr,"Error reading string %i, on pipe1\n",n);
 			}
+			set_fcntl(p1[0],O_NONBLOCK);
 			for(int j=0;j<strlen(str);j++){
 				str[j] = str[j] - 'a' + 'A';
 			}
@@ -162,10 +164,12 @@ int main(int argc, char *argv[]){
 		
 		if(read(p2[0],&strSize,sizeof(int)) == sizeof(int)){
 			str = (char *) malloc((strSize+1)*sizeof(char));
-			sleep(WAIT_TIME_2);
+			//sleep(WAIT_TIME_2);
+			clr_fcntl(p2[0],O_NONBLOCK);
 			if(read(p2[0],str,(strSize+1)*sizeof(char))!=(strSize+1)*sizeof(char)){
 				fprintf(stderr,"Error reading string %i, on pipe2\n",m);
 			}
+			set_fcntl(p2[0],O_NONBLOCK);
 			for(int j=0;j<strlen(str);j++){
 				str[j] = str[j] - 'a' + 'A';
 			}
