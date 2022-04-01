@@ -71,22 +71,21 @@ int main(int argc, char *argv[]){
 	}
 	close(p2[1]); // father close writing p2
 	
-	signal(SIGUSR1, signalHandler);
-	signal(SIGUSR2, signalHandler);
+	// signal(SIGUSR1, signalHandler);
+	// signal(SIGUSR2, signalHandler);
 	
-	// union sigval sval; // no array because parameter by value
-	// struct sigevent sev; // no array because parameter by value
 	struct aiocb **aio = (struct aiocb **)malloc(2*sizeof(struct aiocb *));
 	thread_par **tpar = (thread_par **)malloc(2*sizeof(thread_par *));
 	for(int i=0;i<2;i++){
 		tpar[i] = (thread_par *)malloc(STR_NUM*sizeof(thread_par));
 		aio[i] = (struct aiocb *)malloc(STR_NUM*sizeof(struct aiocb));
 	}
+
 	mu = (pthread_mutex_t *)malloc(2*sizeof(pthread_mutex_t));
 	pthread_mutex_init(mu,NULL);
 
-	int p[2]; p[0]=p1[0]; p[1]=p2[0]; // TO CHANGE
-	
+	int p[2]; p[0]=p1[0]; p[1]=p2[0]; // It's ugly, to be change
+
 	for(int i=0;i<STR_NUM;i++){
 		for(int k=0;k<2;k++){ // pipe1 and pipe2
 
@@ -94,12 +93,6 @@ int main(int argc, char *argv[]){
 
 			tpar[k][i].fd = p[k];
 			tpar[k][i].n = k;
-			
-			// sval.sival_ptr = (void *) &tpar[0][i];
-		
-			// sev.sigev_notify = SIGEV_THREAD;
-			// sev.sigev_value = sval;
-			// sev.sigev_notify_function = thread_getLenght;
 			
 			aio[k][i].aio_fildes = tpar[k][i].fd;
 			aio[k][i].aio_buf = &(tpar[k][i].strSize);
