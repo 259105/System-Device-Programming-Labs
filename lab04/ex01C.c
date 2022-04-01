@@ -118,12 +118,12 @@ int main(int argc, char *argv[]){
 	while(k<STR_NUM*2){
 		// Reset the set of reading
 		FD_ZERO(&rdSet);
-		if(n<STR_NUM){
+		if(n<STR_NUM)
 			FD_SET(p1[0],&rdSet);
-		}	
-		if(m<STR_NUM){
+			
+		if(m<STR_NUM)
 			FD_SET(p2[0],&rdSet);
-		}
+		
 		// set the time 
 		struct timeval tv;
 		tv.tv_sec=MCD(WAIT_TIME_1,WAIT_TIME_2);
