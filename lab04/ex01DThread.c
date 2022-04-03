@@ -17,13 +17,16 @@ typedef struct{
 	int fd;
 	int strSize;
 	int n;
+	char *str;
 } thread_par;
 
 pthread_mutex_t *mu;
+pthread_mutex_t *muS;
 
 void child1(int);
 void child2(int);
 void thread_getLenght(union sigval);
+void thread_getString(union sigval);
 void signalHandler(int);
 void checkErr(int);
 
@@ -64,7 +67,7 @@ int main(int argc, char *argv[]){
 		close(p2[0]); // child2 close reading p2
 		close(p1[0]); // child2 close reading p1
 		
-		child2(p2[1]);
+		//child2(p2[1]);
 		
 		close(p2[1]); // child2 close writing p2 at the 
 		exit(0);
@@ -82,12 +85,18 @@ int main(int argc, char *argv[]){
 	}
 
 	mu = (pthread_mutex_t *)malloc(2*sizeof(pthread_mutex_t));
-	pthread_mutex_init(mu,NULL);
+	muS = (pthread_mutex_t *) malloc(2*sizeof(pthread_mutex_t));
+
+	for(int i=0;i<2;i++){
+		pthread_mutex_init(&mu[i],NULL);
+		pthread_mutex_init(&muS[i],NULL);
+		pthread_mutex_lock(&muS[i]);
+	}
 
 	int p[2]; p[0]=p1[0]; p[1]=p2[0]; // It's ugly, to be change
 
 	for(int i=0;i<STR_NUM;i++){
-		for(int k=0;k<2;k++){ // pipe1 and pipe2
+		for(int k=0;k<1;k++){ // pipe1 and pipe2
 
 			pthread_mutex_lock(&mu[k]);
 
@@ -104,14 +113,18 @@ int main(int argc, char *argv[]){
 			//checkErr(aio_error(&aio[k][i]));
 
 			if(aio_read(&aio[k][i]) == -1){
-				fprintf(stderr,"Error aio_read\n");
+				fprintf(stderr,"Error %d aio_read strSize\n",errno);
 			}
 
 			//checkErr(aio_error(&aio[k][i]));
 		}
 	}
-	pthread_mutex_destroy(mu);
+	for(int i=0;i<2;i++){
+		pthread_mutex_destroy(&mu[i]);
+		pthread_mutex_destroy(&muS[i]);
+	}
 	free(mu);
+	free(muS);
 	
 	wait(0);
 	wait(0);
@@ -133,20 +146,47 @@ void thread_getLenght(union sigval sv){
 		int strSize = tpar->strSize;
 		int fd = tpar->fd;
 		int n = tpar->n;
-		//fprintf(stdout,"ThreadChild n: %d; strSize: %d; fd: %d\n",n, strSize, fd);		
-		
-		char *str = (char *) malloc((strSize+1)*sizeof(char));
-		if(read(fd,str,(strSize+1)*sizeof(char))!=(strSize+1)*sizeof(char)){
-			fprintf(stderr,"Error reading string %d, on pipe1\n",n);
-		}else{
-			for(int j=0;j<strlen(str);j++){
-				str[j] = str[j] - 'a' + 'A';
-			}
-			fprintf(stdout,"Child:%d: %s\n",n+1,str);
+		fprintf(stdout,"ThreadChild n: %d; strSize: %d; fd: %d\n",n, strSize, fd);		
+
+		struct aiocb *aio = (struct aiocb*) malloc(sizeof(struct aiocb));
+
+		tpar->str = (char *) malloc((strSize+1)*sizeof(char));
+
+		aio->aio_fildes = fd;
+		aio->aio_buf = tpar->str;
+		aio->aio_nbytes = (strSize+1)*sizeof(char);
+		aio->aio_sigevent.sigev_notify = SIGEV_THREAD;
+		aio->aio_sigevent.sigev_value.sival_ptr = (void *) tpar;
+		aio->aio_sigevent.sigev_notify_function = thread_getString;
+
+		if(aio_read(aio) == -1){
+			fprintf(stderr,"Error %d aio_read str\n",errno);
+			checkErr(aio_error(aio));
 		}
-		free(str);
+
+		pthread_mutex_lock(&muS[n]);
+
+		free(tpar->str);
+		free(aio);
 
 		pthread_mutex_unlock(&mu[n]);
+
+		pthread_exit(0);
+}
+
+void thread_getString(union sigval sv){
+	thread_par *tpar = (thread_par *)sv.sival_ptr;
+	int n = tpar->n;
+	char *str = tpar->str;
+
+	for(int j=0;j<strlen(str);j++){
+		str[j] = str[j] - 'a' + 'A';
+	}
+	fprintf(stdout,"Child:%d: %s\n",n+1,str);
+
+	pthread_mutex_unlock(&muS[n]);
+
+	pthread_exit(0);
 }
 
 void child1(int fd){
@@ -216,6 +256,7 @@ void signalHandler(int signo){
 }
 
 void checkErr(int err){
+	//printf("In error checker\n");
 	if( err == EINPROGRESS ){
 		fprintf(stderr,"The request has not been completed yet\n");
 	}else if(err == ECANCELED ){
