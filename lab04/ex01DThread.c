@@ -17,7 +17,7 @@ typedef struct{
 	int fd;
 	int strSize;
 	int n;
-	char *str;
+	int f;
 } thread_par;
 
 pthread_mutex_t *mu;
@@ -67,7 +67,7 @@ int main(int argc, char *argv[]){
 		close(p2[0]); // child2 close reading p2
 		close(p1[0]); // child2 close reading p1
 		
-		//child2(p2[1]);
+		child2(p2[1]);
 		
 		close(p2[1]); // child2 close writing p2 at the 
 		exit(0);
@@ -77,64 +77,61 @@ int main(int argc, char *argv[]){
 	// signal(SIGUSR1, signalHandler);
 	// signal(SIGUSR2, signalHandler);
 	
-	struct aiocb **aio = (struct aiocb **)malloc(2*sizeof(struct aiocb *));
-	thread_par **tpar = (thread_par **)malloc(2*sizeof(thread_par *));
-	for(int i=0;i<2;i++){
-		tpar[i] = (thread_par *)malloc(STR_NUM*sizeof(thread_par));
-		aio[i] = (struct aiocb *)malloc(STR_NUM*sizeof(struct aiocb));
-	}
+	struct aiocb *aio1, *aio2;
+	aio1 = (struct aiocb *)malloc(sizeof(struct aiocb));
+	aio2 = (struct aiocb *)malloc(sizeof(struct aiocb));
+	thread_par tpar1, tpar2;
 
-	mu = (pthread_mutex_t *)malloc(2*sizeof(pthread_mutex_t));
-	muS = (pthread_mutex_t *) malloc(2*sizeof(pthread_mutex_t));
+	tpar1.fd = p1[0];
+	tpar2.fd = p2[0];
+	tpar1.n = tpar2.n = tpar1.f = tpar2.f = 0;
 
-	for(int i=0;i<2;i++){
-		pthread_mutex_init(&mu[i],NULL);
-		pthread_mutex_init(&muS[i],NULL);
-		pthread_mutex_lock(&muS[i]);
-	}
+	aio1->aio_fildes = tpar1.fd;
+	aio1->aio_offset = 0;
+	aio1->aio_buf = &(tpar1.strSize);
+	aio1->aio_nbytes = sizeof (int);
+	aio1->aio_reqprio = 0;
+	aio1->aio_sigevent.sigev_notify= SIGEV_THREAD;
+	aio1->aio_sigevent.sigev_value.sival_ptr = (void *) &tpar1;
+	aio1->aio_sigevent.sigev_notify_function = thread_getLenght;
 
-	int p[2]; p[0]=p1[0]; p[1]=p2[0]; // It's ugly, to be change
+	aio2->aio_fildes = tpar2.fd;
+	aio2->aio_offset = 0;
+	aio2->aio_buf = &(tpar2.strSize);
+	aio2->aio_nbytes = sizeof (int);
+	aio2->aio_reqprio = 0;
+	aio2->aio_sigevent.sigev_notify= SIGEV_THREAD;
+	aio2->aio_sigevent.sigev_value.sival_ptr = (void *) &tpar2;
+	aio2->aio_sigevent.sigev_notify_function = thread_getLenght;
 
-	for(int i=0;i<STR_NUM;i++){
-		for(int k=0;k<1;k++){ // pipe1 and pipe2
+	mu = (pthread_mutex_t *)malloc(sizeof(pthread_mutex_t));
 
-			pthread_mutex_lock(&mu[k]);
+	pthread_mutex_init(mu,NULL);
 
-			tpar[k][i].fd = p[k];
-			tpar[k][i].n = k;
-			
-			aio[k][i].aio_fildes = tpar[k][i].fd;
-			aio[k][i].aio_buf = &(tpar[k][i].strSize);
-			aio[k][i].aio_nbytes = sizeof(int);
-			aio[k][i].aio_sigevent.sigev_notify= SIGEV_THREAD;
-			aio[k][i].aio_sigevent.sigev_value.sival_ptr = (void *) &tpar[k][i];
-			aio[k][i].aio_sigevent.sigev_notify_function = thread_getLenght;
+	while(tpar1.n<STR_NUM || tpar2.n<STR_NUM){
+		pthread_mutex_lock(mu);
 
-			//checkErr(aio_error(&aio[k][i]));
-
-			if(aio_read(&aio[k][i]) == -1){
+		if(tpar1.n<STR_NUM && tpar1.f == 0) {
+			if(aio_read(aio1) == -1){
 				fprintf(stderr,"Error %d aio_read strSize\n",errno);
+				checkErr(aio_error(aio1));
 			}
-
-			//checkErr(aio_error(&aio[k][i]));
+			tpar1.f=1;
+		}
+		if(tpar2.n<STR_NUM && tpar2.f == 0){
+			if(aio_read(aio2) == -1){
+				fprintf(stderr,"Error %d aio_read strSize\n",errno);
+				checkErr(aio_error(aio2));
+			}
+			tpar2.f=1;
 		}
 	}
-	for(int i=0;i<2;i++){
-		pthread_mutex_destroy(&mu[i]);
-		pthread_mutex_destroy(&muS[i]);
-	}
+
+	pthread_mutex_destroy(mu);
 	free(mu);
-	free(muS);
 	
 	wait(0);
 	wait(0);
-
-	for(int i=0;i<2;i++){
-		free(tpar[i]);
-		free(aio[i]);
-	}
-	free(tpar);
-	free(aio);
 	
 	close(p1[0]); // father close reading p1 at the end
 	close(p2[0]); // father close reading p2 at the 
@@ -146,47 +143,23 @@ void thread_getLenght(union sigval sv){
 		int strSize = tpar->strSize;
 		int fd = tpar->fd;
 		int n = tpar->n;
-		fprintf(stdout,"ThreadChild n: %d; strSize: %d; fd: %d\n",n, strSize, fd);		
+		fprintf(stdout,"ThreadChild ; strSize: %d; fd: %d\n", strSize, fd);		
 
-		struct aiocb *aio = (struct aiocb*) malloc(sizeof(struct aiocb));
-
-		tpar->str = (char *) malloc((strSize+1)*sizeof(char));
-
-		aio->aio_fildes = fd;
-		aio->aio_buf = tpar->str;
-		aio->aio_nbytes = (strSize+1)*sizeof(char);
-		aio->aio_sigevent.sigev_notify = SIGEV_THREAD;
-		aio->aio_sigevent.sigev_value.sival_ptr = (void *) tpar;
-		aio->aio_sigevent.sigev_notify_function = thread_getString;
-
-		if(aio_read(aio) == -1){
-			fprintf(stderr,"Error %d aio_read str\n",errno);
-			checkErr(aio_error(aio));
+		char *str = (char *)malloc((strSize+1)*sizeof(char));
+		if(read(fd,str,(strSize+1)*sizeof(char)) != (strSize+1)*sizeof(char)){
+			fprintf(stderr,"Error reading from pipeline %d\n", n);
 		}
+		for(int j=0;j<strlen(str);j++){
+			str[j] = str[j] - 'a' + 'A';
+		}
+		fprintf(stdout,"Child: %s\n",str);
+		free(str);
 
-		pthread_mutex_lock(&muS[n]);
-
-		free(tpar->str);
-		free(aio);
-
-		pthread_mutex_unlock(&mu[n]);
+		tpar->f=0;
+		tpar->n++;
+		pthread_mutex_unlock(mu);
 
 		pthread_exit(0);
-}
-
-void thread_getString(union sigval sv){
-	thread_par *tpar = (thread_par *)sv.sival_ptr;
-	int n = tpar->n;
-	char *str = tpar->str;
-
-	for(int j=0;j<strlen(str);j++){
-		str[j] = str[j] - 'a' + 'A';
-	}
-	fprintf(stdout,"Child:%d: %s\n",n+1,str);
-
-	pthread_mutex_unlock(&muS[n]);
-
-	pthread_exit(0);
 }
 
 void child1(int fd){
@@ -244,14 +217,6 @@ void child2(int fd){
 		}
 		
 		free(str);
-	}
-}
-
-void signalHandler(int signo){
-	if(signo == SIGUSR1){
-		fprintf(stdout,"Receved SIGUSR1\n");
-	}else if(signo == SIGUSR2){
-		fprintf(stdout,"Receved SIGUSR2\n");
 	}
 }
 

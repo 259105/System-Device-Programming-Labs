@@ -12,9 +12,8 @@
 #define STR_SIZE 5
 #define STR_NUM 3
 
-int strSize;
-int n;
-char *str;
+int strSize1, strSize2;
+int i1,i2, f1, f2;
 
 void child1(int);
 void child2(int);
@@ -25,11 +24,6 @@ void signalHandler(int signo){
 		fprintf(stdout,"Receved SIGUSR1\n");
 	}else if(signo == SIGUSR2){
 		fprintf(stdout,"Receved SIGUSR2\n");
-
-		for(int j=0;j<strlen(str);j++){
-			str[j] = str[j] - 'a' + 'A';
-		}
-		fprintf(stdout,"Child:%d: %s\n",n+1,str);
 	}
 }
 
@@ -82,52 +76,50 @@ int main(int argc, char *argv[]){
 	}
 	close(p2[1]); // father close writing p2
 	
-	struct aiocb aio;
+	struct aiocb *aio1, *aio2;
+	aio1 = (struct aiocb *)malloc(sizeof(struct aiocb));
+	aio2 = (struct aiocb *)malloc(sizeof(struct aiocb));
 
-	int p[2]; p[0]=p1[0]; p[1]=p2[0]; // It's ugly, to be change
+	aio1->aio_fildes = p1[0];
+	aio1->aio_offset = 0;
+	aio1->aio_buf = &strSize1;
+	aio1->aio_nbytes = sizeof (int);
+	aio1->aio_reqprio = 0;
+	aio1->aio_sigevent.sigev_notify = SIGEV_SIGNAL;
+	aio1->aio_sigevent.sigev_signo = SIGUSR1;
 
-	for(int i=0;i<STR_NUM;i++){
-		for(int k=0;k<2;k++){ // pipe1 and pipe2
-			
-			aio.aio_fildes = p[k];
-			aio.aio_offset = 0;
-			aio.aio_buf = &(strSize);
-			aio.aio_nbytes = sizeof(int);
-			aio.aio_reqprio = 0;
-			aio.aio_sigevent.sigev_notify = SIGEV_SIGNAL;
-			aio.aio_sigevent.sigev_signo = SIGUSR1;
-			aio.aio_sigevent.sigev_value.sival_ptr = (void *) &aio;
+	aio2->aio_fildes = p2[0];
+	aio2->aio_offset = 0;
+	aio2->aio_buf = &strSize2;
+	aio2->aio_nbytes = sizeof (int);
+	aio2->aio_reqprio = 0;
+	aio2->aio_sigevent.sigev_notify = SIGEV_SIGNAL;
+	aio2->aio_sigevent.sigev_signo = SIGUSR2;
 
-			if(aio_read(&aio) == -1){
+	i1 = i2 = f1 = f2= 0;
+	while(i1<STR_NUM || i2<STR_NUM){
+		if (i1<STR_NUM && f1 == 0) {
+
+            if(aio_read(aio1) == -1){
 				fprintf(stderr,"Error %d aio_read\n",errno);
-				checkErr(aio_error(&aio));
+				checkErr(aio_error(aio1));
 			}
 
-			pause();
+            f1 = 1;
+        }
+        if (i2<STR_NUM && f2 == 0) {
 
-			str = (char *) malloc(strSize * sizeof(char));
-			n=i;
-
-			aio.aio_fildes = p[k];
-			aio.aio_offset = 0;
-			aio.aio_buf = str;
-			aio.aio_nbytes = strSize*sizeof(char);
-			aio.aio_reqprio = 0;
-			aio.aio_sigevent.sigev_notify= SIGEV_SIGNAL;
-			aio.aio_sigevent.sigev_signo = SIGUSR2;
-			aio.aio_sigevent.sigev_value.sival_ptr = (void *) &aio;
-
-			if(aio_read(&aio) == -1){
-				fprintf(stderr,"Error aio_read\n");
-				checkErr(aio_error(&aio));
+            if(aio_read(aio2) == -1){
+				fprintf(stderr,"Error %d aio_read\n",errno);
+				checkErr(aio_error(aio2));
 			}
 
-			pause();
+            f2 = 1;
+        }
 
-			free(str);
-		}
+		pause();
 	}
-	
+			
 	wait(0);
 	wait(0);
 	
@@ -143,11 +135,6 @@ void child1(int fd){
 		sleep(WAIT_TIME_1);
 		
 		int strSize = (rand_r(&seed) % STR_SIZE) + 1;
-		//fprintf(stdout,"child 1 writing the strSize: %d\n", strSize);
-		if( write(fd,&strSize,sizeof(int)) != sizeof(int) ){
-			fprintf(stderr,"Error writing strSize %d: %d on pipe1\n",i,strSize);
-		}
-		
 		char *str = (char *) malloc((strSize+1)*sizeof(char));
 		
 		int j;
@@ -157,6 +144,9 @@ void child1(int fd){
 		
 		fprintf(stdout,"child 1 has generated the string %d: %s\n",i,str);
 		
+		if( write(fd,&strSize,sizeof(int)) != sizeof(int) ){
+			fprintf(stderr,"Error writing strSize %d: %d on pipe1\n",i,strSize);
+		}
 		if(write(fd,str,(strSize+1)*sizeof(char))!=(strSize+1)*sizeof(char)){
 			fprintf(stderr,"Error writing string %d: %s, on pipe1\n",i,str);
 		}
@@ -171,12 +161,7 @@ void child2(int fd){
 	for(int i=0;i<STR_NUM;i++){
 		sleep(WAIT_TIME_2);
 		
-		int strSize = (rand_r(&seed) % STR_SIZE) + 1;
-		//fprintf(stdout,"child 2 writing the strSize: %d\n", strSize);
-		if( write(fd,&strSize,sizeof(int)) != sizeof(int) ){
-			fprintf(stderr,"Error writing strSize %d: %d on pipe2\n",i,strSize);
-		}
-		
+		int strSize = (rand_r(&seed) % STR_SIZE) + 1;	
 		char *str = (char *) malloc((strSize+1)*sizeof(char));
 		
 		int j;
@@ -186,6 +171,9 @@ void child2(int fd){
 		
 		fprintf(stdout,"child 2 has generated the string %d: %s\n",i,str);
 		
+		if( write(fd,&strSize,sizeof(int)) != sizeof(int) ){
+			fprintf(stderr,"Error writing strSize %d: %d on pipe2\n",i,strSize);
+		}
 		if(write(fd,str,(strSize+1)*sizeof(char))!=(strSize+1)*sizeof(char)){
 			fprintf(stderr,"Error writing string %d: %s, on pipe2\n",i,str);
 		}
