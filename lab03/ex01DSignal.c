@@ -53,7 +53,7 @@ int main(int argc, char *argv[]){
 		close(p1[1]); // child1 close writing p1 at the end
 		exit(0);
 	}
-	close(p1[1]); // father close writing p1
+	// close(p1[1]); // father close writing p1
 	
 	if(pipe(p2)==-1){
 		fprintf(stderr,"Error creating pipe 2\n");
@@ -74,27 +74,37 @@ int main(int argc, char *argv[]){
 		close(p2[1]); // child2 close writing p2 at the 
 		exit(0);
 	}
-	close(p2[1]); // father close writing p2
+	// close(p2[1]); // father close writing p2
 	
 	struct aiocb *aio1, *aio2;
 	aio1 = (struct aiocb *)malloc(sizeof(struct aiocb));
 	aio2 = (struct aiocb *)malloc(sizeof(struct aiocb));
+
+	struct sigevent event;
+	event.sigev_notify = SIGEV_SIGNAL;
+	event.sigev_signo = SIGUSR1;
+
+	if(aio1 == NULL || aio2 == NULL){
+		fprintf(stderr,"Error: malloc\n");
+		exit(1);
+	}
 
 	aio1->aio_fildes = p1[0];
 	aio1->aio_offset = 0;
 	aio1->aio_buf = &strSize1;
 	aio1->aio_nbytes = sizeof (int);
 	aio1->aio_reqprio = 0;
-	aio1->aio_sigevent.sigev_notify = SIGEV_SIGNAL;
-	aio1->aio_sigevent.sigev_signo = SIGUSR1;
+	// aio1->aio_sigevent.sigev_notify = SIGEV_SIGNAL;
+	// aio1->aio_sigevent.sigev_signo = SIGUSR1;
+	aio1->aio_sigevent = event;
 
-	aio2->aio_fildes = p2[0];
-	aio2->aio_offset = 0;
-	aio2->aio_buf = &strSize2;
-	aio2->aio_nbytes = sizeof (int);
-	aio2->aio_reqprio = 0;
-	aio2->aio_sigevent.sigev_notify = SIGEV_SIGNAL;
-	aio2->aio_sigevent.sigev_signo = SIGUSR2;
+	// aio2->aio_fildes = p2[0];
+	// aio2->aio_offset = 0;
+	// aio2->aio_buf = &strSize2;
+	// aio2->aio_nbytes = sizeof (int);
+	// aio2->aio_reqprio = 0;
+	// aio2->aio_sigevent.sigev_notify = SIGEV_SIGNAL;
+	// aio2->aio_sigevent.sigev_signo = SIGUSR2;
 
 	i1 = i2 = f1 = f2= 0;
 	while(i1<STR_NUM || i2<STR_NUM){
@@ -124,7 +134,8 @@ int main(int argc, char *argv[]){
 	wait(0);
 	
 	close(p1[0]); // father close reading p1 at the end
-	close(p2[0]); // father close reading p2 at the 
+	close(p2[0]); // father close reading p2 at the end
+	
 	return 0;
 }
 
