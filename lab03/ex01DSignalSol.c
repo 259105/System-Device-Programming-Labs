@@ -15,7 +15,7 @@
 #include <aio.h>
 
 #define L         100
-#define STR_SIZE    5
+#define STR_SIZE   5
 #define STR_NUM     3
 #define WAIT_TIME_1 1
 #define WAIT_TIME_2 3
