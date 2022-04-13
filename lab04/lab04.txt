@@ -168,11 +168,11 @@ Write an application which:
 
 For the previous input files the output file (again, in its ASCII
 version) should be:
-20 0 1 3 5 9 9 12 15 23 23 24 29 34 45 54 65 67 78 89 90
+20 0 1 3 5 9 9 12 12 23 23 24 29 34 45 54 65 67 78 89 90
 
 
 
-Exercise 02
+Exercise 03
 Concurrent visit and comparison of directory trees
 --------------------------------------------------
 
