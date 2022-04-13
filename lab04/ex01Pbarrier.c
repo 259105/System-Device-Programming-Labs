@@ -5,10 +5,8 @@
 #include <semaphore.h>
 
 typedef struct {
-    pthread_mutex_t *me;
-    sem_t *b1;
-    sem_t *b2;
-    int counter;
+    pthread_barrier_t *b1;
+    pthread_barrier_t *b2;
 } BarrierSem;
 
 typedef struct {
@@ -48,6 +46,7 @@ int main(int argc, char *argv[]){
         fprintf(stdout,"%d ",v[i]);
     fprintf(stdout,"\n");
 
+    // ------ NORMAL SOLUTION ------    
     // for(int i=0;i<n;i++){
     //     int pow2i = pow2(i);
     //     for(int j=pow2n-1;j>=pow2i;j--){
@@ -60,19 +59,12 @@ int main(int argc, char *argv[]){
     // }
 
     Thread_pars *thread_pars = (Thread_pars *)malloc((pow2n-1)*sizeof(Thread_pars));
-    if(thread_pars == NULL){
-        fprintf(stderr,"Error malloc\n");
-        exit(1);
-    } 
 
     BarrierSem *b = (BarrierSem *)malloc(sizeof(BarrierSem));
-    b->me = (pthread_mutex_t *)malloc(sizeof(pthread_mutex_t));
-    pthread_mutex_init(b->me,NULL);
-    b->b1 = (sem_t *)malloc(sizeof(sem_t));
-    sem_init(b->b1,0,0);
-    b->b2 = (sem_t *)malloc(sizeof(sem_t));
-    sem_init(b->b2,0,1);
-    b->counter = 0;
+    b->b1 = (pthread_barrier_t *)malloc(sizeof(pthread_barrier_t));
+    pthread_barrier_init(b->b1,NULL,pow2n-1);
+    b->b2 = (pthread_barrier_t *)malloc(sizeof(pthread_barrier_t));
+    pthread_barrier_init(b->b2,NULL,pow2n-1);
 
 
     for(int i=0;i<pow2n-1;i++){
@@ -91,12 +83,10 @@ int main(int argc, char *argv[]){
     fprintf(stdout,"%d ",v[pow2n-1]);
     fprintf(stdout,"\n");
 
-    sem_destroy(b->b1);
-    sem_destroy(b->b2);
-    pthread_mutex_destroy(b->me);
+    pthread_barrier_destroy(b->b1);
     free(b->b1);
+    pthread_barrier_destroy(b->b2);
     free(b->b2);
-    free(b->me);
     free(b);
     free(thread_pars);
     free(v);
@@ -112,44 +102,34 @@ void* thread_fn(void *voidPar){
 
         // kill useless threads
         if(pars->id < pow2(i))
-            pthread_exit(0);   
+            pthread_exit(0);
+        if(pars->id == pow2(i)){ // I have to choose a thread that must do the reinitialization of the next barrier, this in this case is done by the first thread that will have to die in the next cicle
+            pthread_barrier_destroy(pars->b->b2);
+            if(pthread_barrier_init(pars->b->b2,NULL,barrierSize) != 0){
+                fprintf(stderr,"Error: init barrier 2\n");
+                exit(-1);
+            }
+        }
 
         // do the sum
         sum = pars->v[pars->id] + pars->v[pars->id-pow2(i)];
-        // prologue barrier 1
-        pthread_mutex_lock(pars->b->me);
-            pars->b->counter++;
-#ifdef DEB
-            printf("sum %d\n",pars->b->counter);
-#endif
-            if(pars->b->counter == barrierSize){
-                sem_wait(pars->b->b2);
-                sem_post(pars->b->b1);
+        
+        pthread_barrier_wait(pars->b->b1);
+
+        if(pars->id == pow2(i)){ // the same thread as before, have to init barr 1 to the next dimension barr, (calculated on pow2(i+1))
+            barrierSize = pow2(pars->n)-pow2(i+1);
+            pthread_barrier_destroy(pars->b->b1);
+            if(barrierSize !=0 && pthread_barrier_init(pars->b->b1,NULL,barrierSize) != 0){ // the next cicle barrier
+                fprintf(stderr,"Error: init barrier 1\n");
+                exit(-1);
             }
-        pthread_mutex_unlock(pars->b->me);
-        
-        // Barrier 1
-        sem_wait(pars->b->b1);
-        sem_post(pars->b->b1);
-        
+        }
+
         // save the result
         pars->v[pars->id] = sum;
 
-        // prologue barrier 2
-        pthread_mutex_lock(pars->b->me);
-            pars->b->counter--;
-#ifdef DEB
-            printf("save %d\n",pars->b->counter);
-#endif
-            if(pars->b->counter == 0){
-                sem_wait(pars->b->b1);
-                sem_post(pars->b->b2);
-            }
-        pthread_mutex_unlock(pars->b->me);
-        
-        //Barrier 2
-        sem_wait(pars->b->b2);
-        sem_post(pars->b->b2);
+        // Barrier 2
+        pthread_barrier_wait(pars->b->b2);
     }
     pthread_exit(0);
 }
