@@ -23,10 +23,7 @@ unsigned int pow2(int);
 void* thread_fn(void *);
 
 unsigned int pow2(int n){
-    unsigned int r=1;
-    for(int i=0;i<n;i++)
-        r = r<<1;
-    return r;
+    return 1<<n;
 }
 
 int main(int argc, char *argv[]){
