@@ -1,0 +1,6 @@
+/.idea/
+/cmake-build-debug/
+
+CMakeLists.txt
+lab04/filesToSort/*
+lab04/filesToSort-copy/*
