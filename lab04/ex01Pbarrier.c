@@ -103,7 +103,7 @@ void* thread_fn(void *voidPar){
         // kill useless threads
         if(pars->id < pow2(i))
             pthread_exit(0);
-        if(pars->id == pow2(i)){ // I have to choose a thread that must do the reinitialization of the next barrier, this in this case is done by the first thread that will have to die in the next cicle
+        if(pars->id == pow2(i)){ // I have to choose a thread that must do the reinitialization of the next barrier, in this case is done by the first thread that will have to die in the next cicle
             pthread_barrier_destroy(pars->b->b2);
             if(pthread_barrier_init(pars->b->b2,NULL,barrierSize) != 0){
                 fprintf(stderr,"Error: init barrier 2\n");

@@ -38,15 +38,14 @@ int main(int argc, char *argv[]){
         fprintf(stderr,"Error malloc\n");
         exit(1);
     }
-    for(int i=0; i<pow2n ;i++)
-        v[i] =(rand_r(&n) % 9) + 1;
-    
-    n = atoi(argv[1]);
-    
     fprintf(stdout,"Before:\n");
-    for(int i=0;i<pow2n;i++)
+    for(int i=0; i<pow2n ;i++){
+        v[i] =(rand_r(&n) % 9) + 1;
         fprintf(stdout,"%d ",v[i]);
+    }
     fprintf(stdout,"\n");
+
+    n = atoi(argv[1]);
 
     // for(int i=0;i<n;i++){
     //     int pow2i = pow2(i);
@@ -118,11 +117,11 @@ void* thread_fn(void *voidPar){
         sum = pars->v[pars->id] + pars->v[pars->id-pow2(i)];
         // prologue barrier 1
         pthread_mutex_lock(pars->b->me);
-            pars->b->counter++;
+            // pars->b->counter++;
 #ifdef DEB
-            printf("sum %d\n",pars->b->counter);
+            printf("sum %d\n",pars->b->counter+1);
 #endif
-            if(pars->b->counter == barrierSize){
+            if(++pars->b->counter == barrierSize){
                 sem_wait(pars->b->b2);
                 sem_post(pars->b->b1);
             }
@@ -137,11 +136,11 @@ void* thread_fn(void *voidPar){
 
         // prologue barrier 2
         pthread_mutex_lock(pars->b->me);
-            pars->b->counter--;
+            //pars->b->counter--;
 #ifdef DEB
-            printf("save %d\n",pars->b->counter);
+            printf("save %d\n",pars->b->counter-1);
 #endif
-            if(pars->b->counter == 0){
+            if(--pars->b->counter == 0){
                 sem_wait(pars->b->b1);
                 sem_post(pars->b->b2);
             }

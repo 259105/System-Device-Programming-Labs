@@ -18,8 +18,7 @@ void* th_comparer(void*);
 typedef struct{
     pthread_mutex_t *meR;
     sem_t *meC;
-    sem_t *barrier1;
-    sem_t *barrier2;
+    sem_t *barrier;
     int count_thr,bar_thr,N;
     int end;
 } pthread_synch;
@@ -47,12 +46,10 @@ int main(int argc, char **argv){
     pthread_synch *synch = (pthread_synch *)malloc(sizeof(pthread_synch));
     synch->meC = (sem_t *)malloc(sizeof(sem_t));
     synch->meR = (pthread_mutex_t *)malloc(sizeof(pthread_mutex_t));
-    synch->barrier1 = (sem_t *)malloc(sizeof(sem_t));
-    synch->barrier2 = (sem_t *)malloc(sizeof(sem_t));
+    synch->barrier = (sem_t *)malloc(sizeof(sem_t));
     sem_init(synch->meC,0,0);
     pthread_mutex_init(synch->meR,NULL);
-    sem_init(synch->barrier1,0,0);
-    sem_init(synch->barrier2,0,0);
+    sem_init(synch->barrier,0,0);
     synch->count_thr = 0;
     synch->bar_thr = argc-1;
     synch->end = 0;
@@ -83,6 +80,7 @@ int main(int argc, char **argv){
     for(int i=1;i<argc;i++){
         pthread_join(thrPar[i].tid,0);
     }
+    
     if(synch->bar_thr==0){
         printf("They are equal\n");
     }else if(synch->bar_thr<synch->N){
@@ -95,12 +93,10 @@ int main(int argc, char **argv){
     free(names);
     sem_destroy(synch->meC);
     pthread_mutex_destroy(synch->meR);
-    sem_destroy(synch->barrier1);
-    sem_destroy(synch->barrier2);
+    sem_destroy(synch->barrier);
     free(synch->meC);
     free(synch->meR);
-    free(synch->barrier1);
-    free(synch->barrier2);
+    free(synch->barrier);
     free(synch);
     free(thrPar);
     return 0;
@@ -128,32 +124,16 @@ void* th_reader(void* vpar){
             strcmp(dirent->d_name,"..")==0)
             continue;
 
-        // safety Barrier
-        pthread_mutex_lock(pars->synch->meR);
-            pars->synch->count_thr++;
-            if(pars->synch->count_thr == pars->synch->bar_thr){
-                sem_post(pars->synch->barrier1);
-            }
-        pthread_mutex_unlock(pars->synch->meR);
-        sem_wait(pars->synch->barrier1);
-        sem_post(pars->synch->barrier1);
-
         strcpy(pars->names[pars->id],dirent->d_name);
 
-        // Barrier
-        pthread_mutex_lock(pars->synch->meR);
         #ifdef DEB
-            printf("%s : %d\n",pars->names[pars->id],pars->id);
+            pthread_mutex_lock(pars->synch->meR);
+                printf("%s : %d\n",pars->names[pars->id],pars->id);
+            pthread_mutex_unlock(pars->synch->meR);
         #endif
-            pars->synch->count_thr--;
-            if(pars->synch->count_thr == 0){
-                sem_wait(pars->synch->barrier1);
-                for(int i=0;i<pars->synch->bar_thr;i++){
-                    sem_post(pars->synch->meC);
-                }
-            }
-        pthread_mutex_unlock(pars->synch->meR);
-        sem_wait(pars->synch->barrier2);
+        // Barrier
+        sem_post(pars->synch->meC);
+        sem_wait(pars->synch->barrier);
         if(pars->synch->end)
             break;
 
@@ -191,9 +171,8 @@ void* th_reader(void* vpar){
 
     if(!pars->synch->end && pars->deep==0){
         pthread_mutex_lock(pars->synch->meR);
-            printf("A\n");
+            printf("A\n");                  // WTF!!
             pars->synch->bar_thr--;
-            sem_post(pars->synch->barrier1);
             sem_post(pars->synch->meC);
         pthread_mutex_unlock(pars->synch->meR);
     }
@@ -229,7 +208,7 @@ void* th_comparer(void* vpar){
             pars->synch->end=1;
         
         for(int i=0;i<pars->synch->bar_thr;i++){
-            sem_post(pars->synch->barrier2);
+            sem_post(pars->synch->barrier);
         }
         
         if(diff >0 || pars->synch->bar_thr<pars->synch->N)
