@@ -28,10 +28,10 @@ int main(int argc, char **argv){
     key_t key;
     int shmid;
 
+		system("mkdir tmp");
 
     if(mkfifo(fifo1, 0666) || mkfifo(fifo2, 0666)){
-        sprintf(err,"mkfifo1 %d",errno);
-        perror(err);
+        perror("mkfifo1");
         exit(1);
     }
     if((ff1 = open(fifo1,O_RDWR)) == -1 || (ff2 = open(fifo2, O_RDWR)) == -1){

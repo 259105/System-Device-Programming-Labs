@@ -95,7 +95,7 @@ int P1(int msgid, int shmid){
             break;
         }
 
-        if(msgrcv(msgid, (void *)&msg, 1*sizeof(int), 2, 0)){
+        if(msgrcv(msgid, (void *)&msg, 1*sizeof(int), 2, 0) == -1){
             // the type is 2 => fifo2
             perror("msgrcv");
             exit(1);
@@ -136,7 +136,7 @@ int P2(int msgid, int shmid){
 
     while(1){
 
-        if(msgrcv(msgid, (void *)&msg, 1*sizeof(int), 1, 0)){
+        if(msgrcv(msgid, (void *)&msg, 1*sizeof(int), 1, 0) == -1){
             // the type is 1 => fifo1
             perror("msgrcv");
             exit(1);
@@ -161,7 +161,7 @@ int P2(int msgid, int shmid){
         msg.mtype = 2; // fifo2
         *msg.mtext = n;
 
-        if(msgsnd(msgid, (void *)&msg, 1*sizeof(int), 0)){
+        if(msgsnd(msgid, (void *)&msg, 1*sizeof(int), 0) == -1){
             perror("msgsnd");
             exit(1);
         }
