@@ -11,7 +11,6 @@ void* thread_fn(void*);
 void swap(int *,int *);
 void heapify(int *, int , int );
 void heapSort(int *, int );
-void saveInFile(char *, int*,int);
 
 typedef struct {
     pthread_t tid;
@@ -20,6 +19,13 @@ typedef struct {
     int sizeV;
 } pthread_pars;
 
+typedef struct node{
+    int v;
+    struct node *next;
+} node_t;
+
+void saveInFile(char *, node_t *, int);
+
 pthread_mutex_t mu = PTHREAD_MUTEX_INITIALIZER;
 
 int main(int argc, char *argv[]){
@@ -27,7 +33,7 @@ int main(int argc, char *argv[]){
         fprintf(stderr,"Error paramiters: <srcFile> ... <dstFile>\n");
         exit(-1);
     }
-    int t_start, t_end;
+    clock_t t_start, t_end;
 
     pthread_pars *thr_pars = (pthread_pars *)malloc((argc-2)*sizeof(pthread_pars));
     t_start = clock();
@@ -37,35 +43,44 @@ int main(int argc, char *argv[]){
         pthread_create(&(thr_pars[i].tid),NULL,thread_fn,(void *)&(thr_pars[i]));
     }
 
-    int *indices  = (int *)malloc((argc-2)*sizeof(int));
+    node_t *listH = (node_t *)malloc(sizeof(node_t));
+    listH->next = NULL;
     int size=0;
     for(int i=0;i<argc-2;i++){
         pthread_join(thr_pars[i].tid,0);
         size+=thr_pars[i].sizeV;
-        indices[i] = 0;
-    }
-    int *v = (int *)malloc(size*sizeof(int));
 
-
-    // MERGE OF VECTORS 
-    for(int i=0;i<size;i++){
-        v[i]=INT_MAX;
-        int vectMin;
-        for(int j=0;j<argc-2;j++){
-            if(indices[j]<thr_pars[j].sizeV && thr_pars[j].v[indices[j]] < v[i]){
-                v[i] = thr_pars[j].v[indices[j]];
-                vectMin = j;
+        node_t *node = listH;
+        for(int j=0; j<thr_pars[i].sizeV;){
+            if(node->next == NULL){
+                node_t *tmp = (node_t *)malloc(sizeof(node_t));
+                tmp->v = thr_pars[i].v[j];
+                tmp->next = NULL;
+                node->next = tmp;
+                node = node->next;
+                j++;
+                continue;
             }
+            if(thr_pars[i].v[j]<node->next->v){
+                node_t *tmp = (node_t *)malloc(sizeof(node_t));
+                tmp->v = thr_pars[i].v[j];
+                tmp->next = node->next;
+                node->next = tmp;
+                if(node==listH)
+                    listH->next = tmp;
+                j++;
+                continue;
+            }
+            node = node->next;
         }
-        indices[vectMin]++;
+
     }
     t_end = clock();
     double time = (double)(t_end - t_start) / CLOCKS_PER_SEC;
     printf("%f\n",time);
-    //saveInFile(argv[argc-1],v,size);
 
-    free(indices);
-    free(v);
+    // saveInFile(argv[argc-1],listH,size);
+
     for(int i=0;i<argc-2;i++)
         if(thr_pars[i].v!=NULL)
             free(thr_pars[i].v);
@@ -114,7 +129,7 @@ void* thread_fn(void* vpars){
     pthread_exit(NULL);
 }
 
-void saveInFile(char * filePath, int* v,int size){
+void saveInFile(char * filePath, node_t *listH, int size){
     int fd;
     if((fd = open(filePath,O_WRONLY|O_CREAT|O_TRUNC,S_IRWXU)) == -1){
         perror("Error opening file");
@@ -128,8 +143,8 @@ void saveInFile(char * filePath, int* v,int size){
         exit(-1);
     }
 
-    for(int i=0;i<size;i++){
-        n = v[i];
+    for(node_t *node = listH->next ;node!=NULL;node=node->next){
+        n = node->v;
         if((rt=write(fd,&n,sizeof(int))) == -1 || rt!=sizeof(int)){
             perror("Error writing the file");
             close(fd);
