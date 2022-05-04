@@ -3,6 +3,9 @@
 #include <unistd.h>
 #include <errno.h>
 #include <stdlib.h>
+#include <limits.h>
+
+#define MAX 0x04000000
 
 extern int errno;
 
@@ -18,7 +21,7 @@ int main(int argc, char *argv[]){
         exit(-1);
     }
     int rt;
-    int n=1000000;
+    int n=MAX;
     if((rt=write(fd,&n,sizeof(int))) == -1 || rt!=sizeof(int)){
         perror("Error writing the file");
         close(fd);
@@ -27,8 +30,8 @@ int main(int argc, char *argv[]){
 
     int wrongNumbers=0;
     unsigned int pid = getpid();
-    for(int i=0;i<1000000;i++){
-        n = rand_r(&pid) % 1000000;
+    for(int i=0;i<MAX;i++){
+        n = rand_r(&pid) % MAX;
         if((rt=write(fd,&n,sizeof(int))) == -1 || rt!=sizeof(int)){
             perror("Error writing the file");
             close(fd);

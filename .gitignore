@@ -2,4 +2,11 @@
 /cmake-build-debug/
 
 CMakeLists.txt
-lab04/filesToSort*/*
+/lab04/filesToSort/
+/lab04/filesToSort-copy/
+/lab04/bigFilesToSort/
+/lab05/bigFilesToSort/
+/lab05/filesToSort/
+lab05/bigFilesToSort/file1.bin
+lab05/bigFilesToSort/file2.bin
+lab05/bigFilesToSort/file3.bin
