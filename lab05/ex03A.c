@@ -53,12 +53,12 @@ int main(int argc, char *argv[]){
         
         // Generating random values
         r = (rand_r(&seed) % PREC);
-        v1[i] = ((double) r / PREC) - 1/2;
+        v1[i] = (double) r / PREC - 0.5;
         r = (rand_r(&seed) % PREC);
-        v2[i] = ((double) r / PREC) - 1/2;
+        v2[i] = (double) r / PREC - 0.5;
         for(int j=0; j<n; j++){
             r = (rand_r(&seed) % PREC);
-            M[i][j] = ((double) r / PREC) - 1/2;
+            M[i][j] = (double) r / PREC - 0.5;
         }
     }
 
