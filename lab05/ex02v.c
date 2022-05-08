@@ -99,7 +99,7 @@ int main(int argc, char *argv[]){
     double time = (double)(t_end - t_start) / CLOCKS_PER_SEC;
     printf("%f\n",time);
 
-    // saveInFile(argv[argc-1],v,size);
+    saveInFile(argv[argc-1],v,size);
 
     for(int i=0;i<argc-2;i++)
         if(thr_pars[i].v!=NULL)
