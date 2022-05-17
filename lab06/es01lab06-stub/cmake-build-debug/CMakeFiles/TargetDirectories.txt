@@ -1,0 +1,3 @@
+D:/Documenti/Polito Magistrale/System Device Programming/labs/lab06/es01lab06-stub/cmake-build-debug/CMakeFiles/es01lab06-stub.dir
+D:/Documenti/Polito Magistrale/System Device Programming/labs/lab06/es01lab06-stub/cmake-build-debug/CMakeFiles/edit_cache.dir
+D:/Documenti/Polito Magistrale/System Device Programming/labs/lab06/es01lab06-stub/cmake-build-debug/CMakeFiles/rebuild_cache.dir
