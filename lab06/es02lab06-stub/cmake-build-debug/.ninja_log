@@ -1,0 +1,8 @@
+# ninja log v5
+1	503	6745171743330690	CMakeFiles/es02lab06-stub.dir/main.cpp.obj	d13c5eb9cfd2b65c
+9	529	6745171743590709	CMakeFiles/es02lab06-stub.dir/Queue.cpp.obj	15484c28d9aa4c4
+530	775	6745171745990665	es02lab06-stub.exe	e4a805e164c52aa
+5	520	6745173132225670	CMakeFiles/es02lab06-stub.dir/Queue.cpp.obj	15484c28d9aa4c4
+520	743	6745173134385404	es02lab06-stub.exe	e4a805e164c52aa
+4	522	6745173269737923	CMakeFiles/es02lab06-stub.dir/Queue.cpp.obj	15484c28d9aa4c4
+522	719	6745173271657903	es02lab06-stub.exe	e4a805e164c52aa

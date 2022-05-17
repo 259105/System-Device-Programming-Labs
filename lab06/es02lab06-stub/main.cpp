@@ -19,7 +19,8 @@ int main() {
     Queue q;
     int input;
     enum Client client;
-    /* TEST without console interaction
+    /* TEST without console interaction */
+    std::cout << "Test without console interaction" << std::endl;
     for(int i = 0; i < 3; i++){
         q.push(PRIORITY);
     }
@@ -28,7 +29,7 @@ int main() {
     }
     q.push(POSTAL);
     q.printQueue();
-     */
+
     do{
         std::cout << "1. Request a new number for a client" << std::endl;
         std::cout << "2. Serve next client" << std::endl;
