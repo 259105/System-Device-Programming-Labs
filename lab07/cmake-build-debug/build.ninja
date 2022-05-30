@@ -172,6 +172,39 @@ build 211018.exe: CXX_EXECUTABLE_LINKER__211018_Debug CMakeFiles/211018.dir/2110
   TARGET_IMPLIB = lib211018.dll.a
   TARGET_PDB = 211018.exe.dbg
 
+# =============================================================================
+# Object build statements for EXECUTABLE target matrix_multiplication_async
+
+
+#############################################
+# Order-only phony target for matrix_multiplication_async
+
+build cmake_object_order_depends_target_matrix_multiplication_async: phony || CMakeFiles/matrix_multiplication_async.dir
+
+build CMakeFiles/matrix_multiplication_async.dir/matrix_multiplication_async.cpp.obj: CXX_COMPILER__matrix_multiplication_async_Debug D$:/Documenti/Polito$ Magistrale/System$ Device$ Programming/labs/lab07/matrix_multiplication_async.cpp || cmake_object_order_depends_target_matrix_multiplication_async
+  DEP_FILE = CMakeFiles\matrix_multiplication_async.dir\matrix_multiplication_async.cpp.obj.d
+  FLAGS = -std=c++14 -pthread -Wall -g -std=gnu++23
+  OBJECT_DIR = CMakeFiles\matrix_multiplication_async.dir
+  OBJECT_FILE_DIR = CMakeFiles\matrix_multiplication_async.dir
+
+
+# =============================================================================
+# Link build statements for EXECUTABLE target matrix_multiplication_async
+
+
+#############################################
+# Link the executable matrix_multiplication_async.exe
+
+build matrix_multiplication_async.exe: CXX_EXECUTABLE_LINKER__matrix_multiplication_async_Debug CMakeFiles/matrix_multiplication_async.dir/matrix_multiplication_async.cpp.obj
+  FLAGS = -std=c++14 -pthread -Wall -g
+  LINK_LIBRARIES = -lkernel32 -luser32 -lgdi32 -lwinspool -lshell32 -lole32 -loleaut32 -luuid -lcomdlg32 -ladvapi32
+  OBJECT_DIR = CMakeFiles\matrix_multiplication_async.dir
+  POST_BUILD = cd .
+  PRE_LINK = cd .
+  TARGET_FILE = matrix_multiplication_async.exe
+  TARGET_IMPLIB = libmatrix_multiplication_async.dll.a
+  TARGET_PDB = matrix_multiplication_async.exe.dbg
+
 
 #############################################
 # Utility command for edit_cache
@@ -206,6 +239,8 @@ build 211018: phony 211018.exe
 
 build 220117: phony 220117.exe
 
+build matrix_multiplication_async: phony matrix_multiplication_async.exe
+
 # =============================================================================
 # Folder targets.
 
@@ -214,7 +249,7 @@ build 220117: phony 220117.exe
 #############################################
 # Folder: D:/Documenti/Polito Magistrale/System Device Programming/labs/lab07/cmake-build-debug
 
-build all: phony 210705.exe 210619.exe 220117.exe 211018.exe
+build all: phony 210705.exe 210619.exe 220117.exe 211018.exe matrix_multiplication_async.exe
 
 # =============================================================================
 # Built-in targets
