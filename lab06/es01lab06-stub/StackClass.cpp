@@ -162,7 +162,7 @@ StackClass<T> StackClass<T>::operator+(const StackClass<T> &toAdd) {
 }
 
 template<typename T>
-std::ostream & operator<<(std::ostream &os, const StackClass<T> &stack) {
+std::ostream& operator<<(std::ostream &os, const StackClass<T> &stack) {
     for(int i=0; i < stack._size; i++)
         os << stack._dataContainer[i] << std::endl;
     return os;
